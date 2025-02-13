@@ -1,12 +1,13 @@
 package com.sample.user.userService.service;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.sample.user.userService.entity.Hotel;
 import com.sample.user.userService.entity.Rating;
 import com.sample.user.userService.entity.User;
 import com.sample.user.userService.exception.ResouceNotFoundException;
@@ -54,11 +55,26 @@ public class UserServiceImpl implements UserService {
 		// TODO Auto-generated method stub
 		User user = userServiceRepo.findById(userId)
 				.orElseThrow(() -> new ResouceNotFoundException("User Not found in the DB ==" + userId));
-
-	    ArrayList<Rating> ratings = restTemplate.getForObject("http://localhost:8082/rating-api/user/"+userId, ArrayList.class);
-	    user.setRatings(ratings);
-		log.info("user rating" + ratings );
 		
+		//calling to rating service
+
+		Rating[] ratings = restTemplate.getForObject("http://RATINGSERVICE/rating-api/user/" + userId, Rating[].class);
+
+		user.setRatings(Arrays.asList(ratings));
+		log.info("user rating" + ratings);
+
+		Arrays.stream(ratings).forEach(rating -> {
+			String hotelId = rating.getHotelId();
+			log.info("hotelId" + ratings);
+
+			// calling to hotel Service
+
+			Hotel hotel = restTemplate.getForObject("http://HOTELSERVICE/hotelservice-api/hotel/" + hotelId,
+					Hotel.class);
+			rating.setHotel(hotel);
+
+		});
+
 		return user;
 	}
 
